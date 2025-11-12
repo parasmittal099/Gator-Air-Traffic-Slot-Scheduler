@@ -1,172 +1,125 @@
-#ifndef MINHEAP_H
-#define MINHEAP_H
+#ifndef MIN_HEAP_H
+#define MIN_HEAP_H
 
 #include <vector>
-#include <functional>
-#include <stdexcept>
-#include <iostream>
 #include <utility>
 
-/**
- * Generic Binary Min-Heap implementation from scratch
-
- * Usage examples:
- *   MinHeap<RunwayInfo> runwayPool;  // min heap of runways
- *   MinHeap<TimetableEntry> timetable;  // min heap of flight completions
- */
-
-template<typename T, typename Compare = std::less<T>>
+template<typename T>
 class MinHeap {
 private:
-    std::vector<T> heap;     
-    Compare comp;       
+    std::vector<T> heap;
     
     // Get parent index
-    int parent(int i) const {
-        return (i - 1) / 2;
-    }
-    
+    int parent(int i) { return (i - 1) / 2; }
     // Get left child index
-    int leftChild(int i) const {
-        return 2 * i + 1;
-    }
-    
+    int leftChild(int i) { return 2 * i + 1; }
     // Get right child index
-    int rightChild(int i) const {
-        return 2 * i + 2;
-    }
+    int rightChild(int i) { return 2 * i + 2; }
     
-    // Bubble up element at index i to maintain heap property
-    void bubbleUp(int i) {
-        while (i > 0 && comp(heap[i], heap[parent(i)])) {
-            // Swap with parent if current is smaller
+    // Move element up to maintain heap property
+    void heapifyUp(int i) {
+        while (i > 0 && heap[parent(i)] > heap[i]) {
             std::swap(heap[i], heap[parent(i)]);
             i = parent(i);
         }
     }
     
-    // Bubble down element at index i to maintain heap property
-    void bubbleDown(int i) {
-        int size = heap.size();
+    // Move element down to maintain heap property
+    void heapifyDown(int i) {
+        int smallest = i;
+        int left = leftChild(i);
+        int right = rightChild(i);
         
-        while (true) {
-            int smallest = i;
-            int left = leftChild(i);
-            int right = rightChild(i);
+        if (left < (int)heap.size() && heap[left] < heap[smallest])
+            smallest = left;
+        if (right < (int)heap.size() && heap[right] < heap[smallest])
+            smallest = right;
             
-            // Check if left child is smaller
-            if (left < size && comp(heap[left], heap[smallest])) {
-                smallest = left;
-            }
-            
-            // Check if right child is smaller
-            if (right < size && comp(heap[right], heap[smallest])) {
-                smallest = right;
-            }
-            
-            // If current node is smallest, we're done
-            if (smallest == i) {
-                break;
-            }
-            
-            // Otherwise, swap and continue
+        if (smallest != i) {
             std::swap(heap[i], heap[smallest]);
-            i = smallest;
+            heapifyDown(smallest);
         }
     }
-
+    
 public:
-    // Constructor
-    MinHeap() : comp(Compare()) {}
+    MinHeap() {}
     
-    // Constructor with custom comparator
-    explicit MinHeap(const Compare& comparator) : comp(comparator) {}
-    
-    // Insert a new element into the heap
+    // Insert element
     void push(const T& value) {
         heap.push_back(value);
-        bubbleUp(heap.size() - 1);
+        heapifyUp(heap.size() - 1);
     }
     
-    // Remove and return the minimum element
-    T pop() {
-        if (isEmpty()) {
-            throw std::runtime_error("MinHeap::pop() - Heap is empty");
-        }
-        
-        T minValue = heap[0];
-        
-        // Move last element to root
-        heap[0] = heap.back();
-        heap.pop_back();
-        
-        // Restore heap property if heap is not empty
-        if (!isEmpty()) {
-            bubbleDown(0);
-        }
-        
-        return minValue;
-    }
-    
-    // Get the minimum element without removing it
-    const T& top() const {
-        if (isEmpty()) {
-            throw std::runtime_error("MinHeap::top() - Heap is empty");
-        }
+    // Get minimum element
+    T top() const {
         return heap[0];
     }
     
+    // Remove minimum element
+    void pop() {
+        if (heap.empty()) return;
+        heap[0] = heap.back();
+        heap.pop_back();
+        if (!heap.empty())
+            heapifyDown(0);
+    }
+    
     // Check if heap is empty
-    bool isEmpty() const {
+    bool empty() const {
         return heap.empty();
     }
     
-    // Get the number of elements in the heap
-    int size() const {
+    // Get heap size
+    size_t size() const {
         return heap.size();
     }
     
-    // Clear all elements from the heap
+    // Clear all elements
     void clear() {
         heap.clear();
     }
+};
+
+// Runway structure for runway pool
+struct Runway {
+    int nextFreeTime;
+    int runwayID;
     
-    // Build heap from existing vector (heapify) - O(n)
-    void buildHeap(const std::vector<T>& elements) {
-        heap = elements;
-        
-        // Start from last non-leaf node and bubble down
-        for (int i = (heap.size() / 2) - 1; i >= 0; --i) {
-            bubbleDown(i);
-        }
+    Runway(int id, int time) : nextFreeTime(time), runwayID(id) {}
+    
+    bool operator>(const Runway& other) const {
+        if (nextFreeTime != other.nextFreeTime)
+            return nextFreeTime > other.nextFreeTime;
+        return runwayID > other.runwayID;
     }
     
-    // Extract all elements that satisfy a condition (for Phase 1 completions)
-    // Returns elements in sorted order (smallest first)
-    std::vector<T> extractWhile(std::function<bool(const T&)> condition) {
-        std::vector<T> result;
-        
-        while (!isEmpty() && condition(top())) {
-            result.push_back(pop());
-        }
-        
-        return result;
-    }
-    
-    // Get all elements in the heap (for debugging/inspection)
-    // WARNING: This breaks encapsulation, use only for debugging
-    const std::vector<T>& getElements() const {
-        return heap;
-    }
-    
-    // Print heap structure (for debugging)
-    void printHeap() const {
-        std::cout << "Heap contents (" << size() << " elements): ";
-        for (const auto& elem : heap) {
-            std::cout << elem << " ";
-        }
-        std::cout << std::endl;
+    bool operator<(const Runway& other) const {
+        if (nextFreeTime != other.nextFreeTime)
+            return nextFreeTime < other.nextFreeTime;
+        return runwayID < other.runwayID;
     }
 };
 
-#endif // MINHEAP_H
+// Timetable entry for completions queue
+struct TimetableEntry {
+    int ETA;
+    int flightID;
+    int runwayID;
+    
+    TimetableEntry(int eta, int fid, int rid) 
+        : ETA(eta), flightID(fid), runwayID(rid) {}
+    
+    bool operator>(const TimetableEntry& other) const {
+        if (ETA != other.ETA)
+            return ETA > other.ETA;
+        return flightID > other.flightID;
+    }
+    
+    bool operator<(const TimetableEntry& other) const {
+        if (ETA != other.ETA)
+            return ETA < other.ETA;
+        return flightID < other.flightID;
+    }
+};
+
+#endif // MIN_HEAP_H

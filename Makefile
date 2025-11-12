@@ -1,12 +1,8 @@
-# Remove the broken Makefile
-rm Makefile
-
-# Create a new one with proper tabs
-cat > Makefile << 'EOF'
 CXX = g++
 CXXFLAGS = -std=c++11 -Wall -Wextra -O2
 TARGET = gatorAirTrafficScheduler
 SOURCES = main.cpp Scheduler.cpp
+HEADERS = Flight.h PairingHeap.h MinHeap.h Scheduler.h
 OBJECTS = $(SOURCES:.cpp=.o)
 
 all: $(TARGET)
@@ -14,14 +10,10 @@ all: $(TARGET)
 $(TARGET): $(OBJECTS)
 	$(CXX) $(CXXFLAGS) -o $(TARGET) $(OBJECTS)
 
-main.o: main.cpp
-	$(CXX) $(CXXFLAGS) -c main.cpp
-
-Scheduler.o: Scheduler.cpp
-	$(CXX) $(CXXFLAGS) -c Scheduler.cpp
+%.o: %.cpp $(HEADERS)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(OBJECTS) $(TARGET) *_output_file.txt
 
 .PHONY: all clean
-EOF
